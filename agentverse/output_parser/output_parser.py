@@ -75,9 +75,9 @@ class CommonParser1(OutputParser):
         if action in ["Speak"]:
             return AgentFinish({"output": action_input}, text)
         elif action == "CallOn":
-            return AgentFinish({"output": "[CallOn] " + action_input}, text)
+            return AgentFinish({"output": f"[CallOn] {action_input}"}, text)
         elif action == "RaiseHand":
-            return AgentFinish({"output": "[RaiseHand] " + action_input}, text)
+            return AgentFinish({"output": f"[RaiseHand] {action_input}"}, text)
         elif action == "Listen":
             return AgentFinish({"output": ""}, text)
         else:
@@ -144,9 +144,9 @@ class NlpClassroom9PlayersParser(OutputParser):
         if action == "Speak":
             return AgentFinish({"output": action_input}, text)
         elif action == "CallOn":
-            return AgentFinish({"output": "[CallOn] " + action_input}, text)
+            return AgentFinish({"output": f"[CallOn] {action_input}"}, text)
         elif action == "RaiseHand":
-            return AgentFinish({"output": "[RaiseHand] " + action_input}, text)
+            return AgentFinish({"output": f"[RaiseHand] {action_input}"}, text)
         elif action == "Listen":
             return AgentFinish({"output": ""}, text)
         else:
@@ -426,8 +426,7 @@ class MGSMEvaluatorParser(OutputParser):
         try:
             # find score and advice
             score_num = [
-                int(pattern.findall(cleaned_output)[0])
-                for i, pattern in enumerate(patterns)
+                int(pattern.findall(cleaned_output)[0]) for pattern in patterns
             ][0]
             if score_num == 0:
                 score = False
@@ -437,7 +436,7 @@ class MGSMEvaluatorParser(OutputParser):
                 raise ValueError("Bad score!")
             pat = re.compile(r"(?:\d.\s*)?Response:\s*(.+)", re.DOTALL)
             advice = pat.findall(cleaned_output)[0]
-            # logger.info("Evaluator give the following advice:\n" + advice)
+                # logger.info("Evaluator give the following advice:\n" + advice)
         except (IndexError, ValueError):
             # logger.error("Bad response from evaluator!")
             raise OutputParserError(text)
@@ -449,28 +448,20 @@ class MGSMCriticAgreeParser(OutputParser):
     def parse(self, output: LLMResult) -> AgentCriticism:
         text = output.content
         text = re.sub(r"\n+", "\n", text.strip())
-        # checks = text.split("\n")
-        # if not text.startswith("Thought:"):
-        #     raise OutputParserError(text)
-        # if not (checks[0].startswith("Action:")):
-        #     raise OutputParserError(text)
-        # if checks[0].strip(". ") == "Action: Agree":
-        #     return AgentCriticism(True, "")
         if "[Agree]" in text:
             return AgentCriticism(True, "")
-        else:
-            # pattern = re.compile(r"Action Input: ([\S\n ]+)")
-            # try:
-            # criticism = pattern.findall(text)[0].strip()
-            # criticism = (
-            #     re.findall(r"Output:\S?(.+)", text)[0].replace("[Wrong]", "")
-            # ).strip()
-            criticism = text.replace("[Disagree]", "").strip()
-            # except IndexError:
-            # logger.error("Bad response from critic!")
-            # raise OutputParserError(text)
-            # criticism = "I think the solution is not correct. Please think carefully and correct it."
-            return AgentCriticism(False, criticism)
+        # pattern = re.compile(r"Action Input: ([\S\n ]+)")
+        # try:
+        # criticism = pattern.findall(text)[0].strip()
+        # criticism = (
+        #     re.findall(r"Output:\S?(.+)", text)[0].replace("[Wrong]", "")
+        # ).strip()
+        criticism = text.replace("[Disagree]", "").strip()
+        # except IndexError:
+        # logger.error("Bad response from critic!")
+        # raise OutputParserError(text)
+        # criticism = "I think the solution is not correct. Please think carefully and correct it."
+        return AgentCriticism(False, criticism)
         # else:
         #     raise OutputParserError(text)
 
@@ -577,10 +568,7 @@ class RoleAssignerParser(OutputParser):
                 f"Role assigner failed to assign roles to {self.cnt_critic_agents} critics!"
             )
             raise OutputParserError(text)
-        res = []
-        for role in roles:
-            res.append({"name": role[0], "description": role[1]})
-        return res
+        return [{"name": role[0], "description": role[1]} for role in roles]
 
 
 @output_parser_registry.register("tool-using-solver")

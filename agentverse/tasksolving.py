@@ -36,7 +36,7 @@ class TaskSolving:
 
         # Build agents for all pipeline (task)
         agents = {}
-        for i, agent_config in enumerate(task_config["agents"]):
+        for agent_config in task_config["agents"]:
             if agent_config.get("agent_type", "") == "critic":
                 agent = load_agent(agent_config)
                 agents[AGENT_TYPES.CRITIC] = [
@@ -83,7 +83,7 @@ class TaskSolving:
 
     def save_result(self, plan: str, result: str, spend: float):
         """Save the result to the result file"""
-        result_file_path = "./results/" + self.task + ".txt"
+        result_file_path = f"./results/{self.task}.txt"
         os.makedirs(os.path.dirname(result_file_path), exist_ok=True)
         with open(result_file_path, "w") as f:
             f.write("[Final Plan]\n" + plan + "\n\n")

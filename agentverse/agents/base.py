@@ -53,9 +53,7 @@ class BaseAgent(BaseModel):
 
     def get_spend_formatted(self) -> str:
         two_trailing = f"${self.get_spend():.2f}"
-        if two_trailing == "$0.00":
-            return f"${self.get_spend():.6f}"
-        return two_trailing
+        return f"${self.get_spend():.6f}" if two_trailing == "$0.00" else two_trailing
 
     def get_all_prompts(self, **kwargs):
         prepend_prompt = Template(self.prepend_prompt_template).safe_substitute(
@@ -69,7 +67,7 @@ class BaseAgent(BaseModel):
 
     def set_receiver(self, receiver: Union[Set[str], str]) -> None:
         if isinstance(receiver, str):
-            self.receiver = set({receiver})
+            self.receiver = {receiver}
         elif isinstance(receiver, set):
             self.receiver = receiver
         else:

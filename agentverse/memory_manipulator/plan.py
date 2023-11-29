@@ -48,14 +48,13 @@ class Plan(BaseMemoryManipulator):
         logger.info(f"{self.agent.name}'s new plan: {result}")
         if result == "No":
             return ""
-        else:
-            self.plan.append(result)
-            plan_message = Message(
-                content=result,
-                sender=self.agent.name,
-                receiver={self.agent.name})
-            self.agent.memory.add_message([plan_message])
-            return result
+        self.plan.append(result)
+        plan_message = Message(
+            content=result,
+            sender=self.agent.name,
+            receiver={self.agent.name})
+        self.agent.memory.add_message([plan_message])
+        return result
 
 
     def _fill_prompt_template(self) -> str:

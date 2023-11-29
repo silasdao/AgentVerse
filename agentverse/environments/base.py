@@ -49,9 +49,8 @@ class BaseEnvironment(BaseModel):
 
     def report_metrics(self) -> None:
         """Report useful metrics"""
-        total_spent = sum([agent.get_spend() for agent in self.agents])
+        total_spent = sum(agent.get_spend() for agent in self.agents)
         logger.info(f"Total spent: ${total_spent}")
-        pass
 
     def is_done(self) -> bool:
         """Check if the environment is done"""

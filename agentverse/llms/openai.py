@@ -109,7 +109,7 @@ class OpenAIChat(BaseChatModel):
         args = args.dict()
         for k, v in args.items():
             args[k] = kwargs.pop(k, v)
-        if len(kwargs) > 0:
+        if kwargs:
             logging.warning(f"Unused arguments: {kwargs}")
         if args['model'] in LOCAL_LLMS:
             openai.api_base = "http://localhost:5000/v1"
@@ -133,7 +133,19 @@ class OpenAIChat(BaseChatModel):
         logger.log_prompt(messages)
         try:
             # Execute function call
-            if functions != []:
+            if not functions:
+                response = openai.ChatCompletion.create(
+                    messages=messages,
+                    **self.args.dict(),
+                )
+                self.collect_metrics(response)
+                return LLMResult(
+                    content=response["choices"][0]["message"]["content"],
+                    send_tokens=response["usage"]["prompt_tokens"],
+                    recv_tokens=response["usage"]["completion_tokens"],
+                    total_tokens=response["usage"]["total_tokens"],
+                )
+            else:
                 response = openai.ChatCompletion.create(
                     messages=messages,
                     functions=functions,
@@ -164,18 +176,6 @@ class OpenAIChat(BaseChatModel):
                         total_tokens=response["usage"]["total_tokens"],
                     )
 
-            else:
-                response = openai.ChatCompletion.create(
-                    messages=messages,
-                    **self.args.dict(),
-                )
-                self.collect_metrics(response)
-                return LLMResult(
-                    content=response["choices"][0]["message"]["content"],
-                    send_tokens=response["usage"]["prompt_tokens"],
-                    recv_tokens=response["usage"]["completion_tokens"],
-                    total_tokens=response["usage"]["total_tokens"],
-                )
         except (OpenAIError, KeyboardInterrupt, json.decoder.JSONDecodeError) as error:
             raise
 
@@ -195,7 +195,21 @@ class OpenAIChat(BaseChatModel):
         logger.log_prompt(messages)
 
         try:
-            if functions != []:
+            if not functions:
+                async with ClientSession(trust_env=True) as session:
+                    openai.aiosession.set(session)
+                    response = await openai.ChatCompletion.acreate(
+                        messages=messages,
+                        **self.args.dict(),
+                    )
+                self.collect_metrics(response)
+                return LLMResult(
+                    content=response["choices"][0]["message"]["content"],
+                    send_tokens=response["usage"]["prompt_tokens"],
+                    recv_tokens=response["usage"]["completion_tokens"],
+                    total_tokens=response["usage"]["total_tokens"],
+                )
+            else:
                 async with ClientSession(trust_env=True) as session:
                     openai.aiosession.set(session)
                     response = await openai.ChatCompletion.acreate(
@@ -207,15 +221,13 @@ class OpenAIChat(BaseChatModel):
                     function_name = response["choices"][0]["message"]["function_call"][
                         "name"
                     ]
-                    valid_function = False
                     if function_name.startswith("function."):
                         function_name = function_name.replace("function.", "")
                     elif function_name.startswith("functions."):
                         function_name = function_name.replace("functions.", "")
-                    for function in functions:
-                        if function["name"] == function_name:
-                            valid_function = True
-                            break
+                    valid_function = any(
+                        function["name"] == function_name for function in functions
+                    )
                     if not valid_function:
                         logger.warn(
                             f"The returned function name {function_name} is not in the list of valid functions. Retrying..."
@@ -263,20 +275,6 @@ class OpenAIChat(BaseChatModel):
                         total_tokens=response["usage"]["total_tokens"],
                     )
 
-            else:
-                async with ClientSession(trust_env=True) as session:
-                    openai.aiosession.set(session)
-                    response = await openai.ChatCompletion.acreate(
-                        messages=messages,
-                        **self.args.dict(),
-                    )
-                self.collect_metrics(response)
-                return LLMResult(
-                    content=response["choices"][0]["message"]["content"],
-                    send_tokens=response["usage"]["prompt_tokens"],
-                    recv_tokens=response["usage"]["completion_tokens"],
-                    total_tokens=response["usage"]["total_tokens"],
-                )
         except (OpenAIError, KeyboardInterrupt, json.decoder.JSONDecodeError) as error:
             raise
 
@@ -286,7 +284,7 @@ class OpenAIChat(BaseChatModel):
         messages = []
         if prepend_prompt != "":
             messages.append({"role": "system", "content": prepend_prompt})
-        if len(history) > 0:
+        if history:
             messages += history
         if append_prompt != "":
             messages.append({"role": "user", "content": append_prompt})

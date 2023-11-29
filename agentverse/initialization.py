@@ -46,7 +46,7 @@ def load_memory_manipulator(memory_manipulator_config: Dict):
 
 
 def load_tools(tool_config: List[Dict]):
-    if len(tool_config) == 0:
+    if not tool_config:
         return []
     all_tools_list = []
     for tool in tool_config:
@@ -62,8 +62,7 @@ def load_environment(env_config: Dict) -> BaseEnvironment:
 
 def load_agent(agent_config: Dict) -> BaseAgent:
     agent_type = agent_config.pop("agent_type", "conversation")
-    agent = agent_registry.build(agent_type, **agent_config)
-    return agent
+    return agent_registry.build(agent_type, **agent_config)
 
 
 def prepare_task_config(task, tasks_dir):
@@ -79,12 +78,16 @@ def prepare_task_config(task, tasks_dir):
                 and task != "__pycache__"
             ):
                 all_tasks.append(task)
-                for subtask in os.listdir(os.path.join(all_task_dir, task)):
+                all_tasks.extend(
+                    f"{task}/{subtask}"
+                    for subtask in os.listdir(os.path.join(all_task_dir, task))
                     if (
-                        os.path.isdir(os.path.join(all_task_dir, task, subtask))
+                        os.path.isdir(
+                            os.path.join(all_task_dir, task, subtask)
+                        )
                         and subtask != "__pycache__"
-                    ):
-                        all_tasks.append(f"{task}/{subtask}")
+                    )
+                )
         raise ValueError(f"Task {task} not found. Available tasks: {all_tasks}")
     if not os.path.exists(config_path):
         raise ValueError(
